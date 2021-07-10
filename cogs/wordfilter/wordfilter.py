@@ -1,8 +1,6 @@
 """Word Filter cog.
 To filter words in a more smart/useful wya than simply detecting and
 deleting a message.
-
-This cog requires paginator.py, obtainable from Rapptz/RoboDanny.
 """
 import re
 from threading import Lock
@@ -11,7 +9,9 @@ import asyncio
 import random
 import discord
 from redbot.core import Config, checks, commands, data_manager
-from redbot.core.utils import paginator
+from redbot.core.utils import AsyncIter
+from redbot.core.utils.menus import DEFAULT_CONTROLS, menu
+from redbot.core.utils.chat_formatting import pagify
 from redbot.core.bot import Red
 from .constants import (
     BASE,
@@ -136,11 +136,19 @@ class WordFilter(commands.Cog):  # pylint: disable=too-many-instance-attributes
             display = []
             for regex in filters:
                 display.append("`{}`".format(regex))
-
-            page = paginator.Pages(ctx=ctx, entries=display, show_entry_count=True)
-            page.embed.title = "Filtered words for: **{}**".format(guildName)
-            page.embed.colour = discord.Colour.red()
-            await page.paginate()
+            pageList = []
+            msg = "\n".join(display)
+            pages = list(pagify(msg, page_length=300))
+            totalPages = len(pages)
+            totalEntries = len(display)
+            async for pageNumber, page in AsyncIter(pages).enumerate(start=1):
+                embed = discord.Embed(
+                    title=f"Filtered words for: **{guildName}**", description=page
+                )
+                embed.set_footer(text=f"Page {pageNumber}/{totalPages} ({totalEntries} entries)")
+                embed.colour = discord.Colour.red()
+                pageList.append(embed)
+            await menu(ctx, pageList, DEFAULT_CONTROLS)
         else:
             await user.send("Sorry you have no filtered words in **{}**".format(guildName))
 
@@ -250,10 +258,19 @@ class WordFilter(commands.Cog):  # pylint: disable=too-many-instance-attributes
             for cmd in cmdDenied:
                 display.append("`{}`".format(cmd))
 
-            page = paginator.Pages(ctx=ctx, entries=display, show_entry_count=True)
-            page.embed.title = f"Denylist commands for: **{guildName}**"
-            page.embed.colour = discord.Colour.red()
-            await page.paginate()
+            pageList = []
+            msg = "\n".join(display)
+            pages = list(pagify(msg, page_length=300))
+            totalPages = len(pages)
+            totalEntries = len(display)
+            async for pageNumber, page in AsyncIter(pages).enumerate(start=1):
+                embed = discord.Embed(
+                    title=f"Denylist commands for: **{guildName}**", description=page
+                )
+                embed.set_footer(text=f"Page {pageNumber}/{totalPages} ({totalEntries} entries)")
+                embed.colour = discord.Colour.red()
+                pageList.append(embed)
+            await menu(ctx, pageList, DEFAULT_CONTROLS)
         else:
             await ctx.send(f"Sorry, there are no commands on the denylist for **{guildName}**")
 
@@ -347,10 +364,19 @@ class WordFilter(commands.Cog):  # pylint: disable=too-many-instance-attributes
                     continue
                 display.append("`{}`".format(channelTemp.name))
 
-            page = paginator.Pages(ctx=ctx, entries=display, show_entry_count=True)
-            page.embed.title = f"Allowlist channels for: **{guildName}**"
-            page.embed.colour = discord.Colour.red()
-            await page.paginate()
+            pageList = []
+            msg = "\n".join(display)
+            pages = list(pagify(msg, page_length=300))
+            totalPages = len(pages)
+            totalEntries = len(display)
+            async for pageNumber, page in AsyncIter(pages).enumerate(start=1):
+                embed = discord.Embed(
+                    title=f"Allowlist channels for: **{guildName}**", description=page
+                )
+                embed.set_footer(text=f"Page {pageNumber}/{totalPages} ({totalEntries} entries)")
+                embed.colour = discord.Colour.red()
+                pageList.append(embed)
+            await menu(ctx, pageList, DEFAULT_CONTROLS)
         else:
             await ctx.send(f"Sorry, there are no channels in the allowlist for **{guildName}**")
 
